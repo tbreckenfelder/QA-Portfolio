@@ -1,3 +1,4 @@
+import pytest
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -5,49 +6,74 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from datetime import date
-import time
-def get_exactly_18_birthdate():
+
+def get_birthdate_for_age(age: int) -> str:
     today = date.today()
     try:
-        birthdate = today.replace(year=today.year - 18)
+        birthdate = today.replace(year=today.year - age)
     except ValueError:
-        # Sonderfall: 29. Februar
-        birthdate = today.replace(month=2, day=28, year=today.year - 18)
+        birthdate = today.replace(month=2, day=28, year=today.year - age)
     return birthdate.strftime("%d-%m-%Y")
-def test_exactly_18():
+
+@pytest.mark.parametrize(
+    "age, should_be_allowed",
+    [
+        (17, False),
+        (18, True),
+        (19, True),
+    ],
+)
+def test_age_check(age, should_be_allowed):
     chrome_options = Options()
     chrome_options.add_argument("--start-maximized")
-    service = Service()
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver = webdriver.Chrome(service=Service(), options=chrome_options)
     wait = WebDriverWait(driver, 10)
+
     try:
-        # 1. Website öffnen
         driver.get("https://grocerymate.masterschool.com/store")
-        # 2. Date input field finden
+
+        # Storage löschen → Modal kommt sicher wieder
+        driver.execute_script("window.localStorage.clear();")
+        driver.execute_script("window.sessionStorage.clear();")
+        driver.refresh()
+
         date_input = wait.until(
             EC.visibility_of_element_located(
                 (By.XPATH, "//input[@placeholder='DD-MM-YYYY']")
             )
         )
-        # 3. Geburtsdatum für exakt 18 Jahre berechnen
-        birthdate_18 = get_exactly_18_birthdate()
-        print(f"Testing birthdate: {birthdate_18}")
-        date_input.send_keys(birthdate_18)
-        # 4. Confirm-Button anklicken
+
+        date_input.send_keys(get_birthdate_for_age(age))
+
         confirm_button = wait.until(
             EC.element_to_be_clickable(
                 (By.XPATH, "//div[@class='modal-content']//button[normalize-space()='Confirm']")
             )
         )
         confirm_button.click()
-        # 5. Warten, bis das Modal verschwindet (Zugriff erlaubt)
-        wait.until(
-            EC.invisibility_of_element_located(
-                (By.XPATH, "//div[contains(@class,'modal-content')]")
+
+        if should_be_allowed:
+            # Modal muss verschwinden
+            wait.until(
+                EC.invisibility_of_element_located(
+                    (By.XPATH, "//div[contains(@class,'modal-content')]")
+                )
             )
-        )
-        time.sleep(3)
+        else:
+            # Modal muss sichtbar bleiben
+            wait.until(
+                EC.visibility_of_element_located(
+                    (By.XPATH, "//div[contains(@class,'modal-content')]")
+                )
+            )
+
     finally:
         driver.quit()
-    if __name__ == "__main__":
-        test_exactly_18()
+
+# ============================= test session starts ==============================
+# collecting ... collected 3 items
+# test_age_verification.py::test_age_check[17-False]
+# test_age_verification.py::test_age_check[18-True]
+# test_age_verification.py::test_age_check[19-True]
+# ========================= 1 failed, 2 passed in 13.98s =========================
+# FAILED                [ 33%]

@@ -1,0 +1,7 @@
+# Web Automation
+selenium>=4.14.0
+- Ab Version 4.6+ kann Selenium den ChromeDriver automatisch über Selenium Manager laden.
+- Wenn du webdriver-manager nutzt, kannst du auch explizit den Treiber verwalten.
+
+# Testing
+pytest>=7.4.0
