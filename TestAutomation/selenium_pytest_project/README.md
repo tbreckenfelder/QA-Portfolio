@@ -19,7 +19,7 @@ Getestet wird der Zugriff für Nutzer im Alter von **17, 18 und 19** Jahren.
 
 ## Projektstruktur
 
-p## 📁 Projektstruktur
+Projektstruktur
 
 project-root/
 ├── pages/
@@ -37,7 +37,7 @@ project-root/
 
 ---
 
-## 🧩 Architektur
+## Architektur
 
 - **`pages/`**: Page Objects, kapseln Locators & UI-Aktionen  
 - **`tests/`**: Testlogik und Assertions, parametrisiert  
