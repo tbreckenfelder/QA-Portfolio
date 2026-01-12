@@ -69,11 +69,3 @@ def test_age_check(age, should_be_allowed):
 
     finally:
         driver.quit()
-
-# ============================= test session starts ==============================
-# collecting ... collected 3 items
-# test_age_verification.py::test_age_check[17-False]
-# test_age_verification.py::test_age_check[18-True]
-# test_age_verification.py::test_age_check[19-True]
-# ========================= 1 failed, 2 passed in 13.98s =========================
-# FAILED                [ 33%]
