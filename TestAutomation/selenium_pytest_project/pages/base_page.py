@@ -1,40 +1,71 @@
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from TestAutomation.selenium_pytest_project.helpers.constant_values import DEFAULT_WAIT_TIME
 
 class BasePage:
-    """
-    Gemeinsame Basis für alle Page Objects
-    """
-    def __init__(self, driver, timeout=10):
+    def __init__(self, driver):
         self.driver = driver
-        self.wait = WebDriverWait(driver, timeout)
+        self.wait = WebDriverWait(driver, DEFAULT_WAIT_TIME)
 
-    # ---------- Generic find / wait helpers ----------
+    def open(self, url: str):
+        """Navigiert zu einer URL"""
+        self.driver.get(url)
+        return self
 
-    def wait_for_visibility(self, locator):
-        return self.wait.until(
-            EC.visibility_of_element_located(locator)
-        )
+    def click(self, locator):
+        """Klickt auf ein Element, nachdem es klickbar ist"""
+        self.wait.until(EC.element_to_be_clickable(locator)).click()
 
-    def wait_for_clickable(self, locator):
-        return self.wait.until(
-            EC.element_to_be_clickable(locator)
-        )
+    def type(self, locator, text: str, clear: bool = True):
+        """Gibt Text in ein Eingabefeld ein"""
+        element = self.wait.until(EC.visibility_of_element_located(locator))
+        if clear:
+            element.clear()
+        element.send_keys(text)
 
-    def wait_for_invisibility(self, locator):
-        self.wait.until(
-            EC.invisibility_of_element_located(locator)
-        )
+    def is_visible(self, locator) -> bool:
+        """Prüft, ob ein Element sichtbar ist (Ohne Try-Except)"""
+        # Wir warten, bis Selenium das Element im DOM findet
+        self.wait.until(EC.presence_of_element_located(locator))
+        elements = self.driver.find_elements(*locator)
+        if elements:
+            return elements[0].is_displayed()
+        return False
 
-    def is_element_present(self, locator) -> bool:
-        return len(self.driver.find_elements(*locator)) > 0
+    def is_present(self, locator, timeout: int = None) -> bool:
+        """
+        Prüft, ob ein Element im DOM vorhanden ist.
+        Nutzt find_elements, um Exceptions zu vermeiden.
+        """
+        time = timeout if timeout else DEFAULT_WAIT_TIME
 
-    # ---------- Browser / JS helpers ----------
+        self.driver.implicitly_wait(time)  # Kurzzeitig implizites Warten einschalten
+        elements = self.driver.find_elements(*locator)
+        self.driver.implicitly_wait(0)  # Sofort wieder ausschalten (Best Practice)
 
-    def clear_storage(self):
-        self.driver.execute_script("window.localStorage.clear();")
-        self.driver.execute_script("window.sessionStorage.clear();")
-        self.driver.refresh()
+        return len(elements) > 0
 
-    def execute_js(self, script: str):
-        return self.driver.execute_script(script)
+    def get_text(self, locator) -> str:
+        """Gibt den Text eines Elements zurück"""
+        return self.wait.until(EC.visibility_of_element_located(locator)).text
+
+    def get_element(self, locator):
+        """Gibt das WebElement zurück, sobald es sichtbar ist"""
+        return self.wait.until(EC.visibility_of_element_located(locator))
+
+    def get_elements(self, locator):
+        """Gibt alle passenden Elemente zurück (wartet bis mindestens eines da ist)"""
+        self.wait.until(EC.presence_of_element_located(locator))
+        return self.driver.find_elements(*locator)
+
+    def find_elements_no_wait(self, locator):
+        """Gibt Elemente zurück ohne zu warten (für Checks, ob Element existiert)"""
+        return self.driver.find_elements(*locator)
+
+    def wait_until_not_visible(self, locator):
+        """Wartet, bis ein Element nicht mehr sichtbar ist"""
+        self.wait.until(EC.invisibility_of_element_located(locator))
+
+    def wait_for_text_change(self, locator, old_text: str):
+        """Wartet, bis sich der Text eines Elements ändert"""
+        self.wait.until_not(EC.text_to_be_present_in_element(locator, old_text))
